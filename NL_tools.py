@@ -41,5 +41,17 @@ def extract_all_patches(w, pict):
     return patch
 
 
-def patches_to_2D(patches):
+def patches_to_2D(patches, n, w1):
     return np.transpose((np.reshape(patches, (n*n,w1*w1), order="F")))
+
+
+def normalize(K):
+    return K/np.sum(K)
+
+
+def exponential_kernel(distance, tau):
+    return normalize(np.exp(-distance/(2*tau**2)))
+
+
+def selection(i, q, n):
+    return np.array((clamp(np.arange(i[0]-q,i[0] + q + 1), 0, n-1), clamp(np.arange(i[1]-q,i[1] + q + 1), 0, n-1)))
