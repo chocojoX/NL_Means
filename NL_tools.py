@@ -15,9 +15,23 @@ def plot_picture(f):
     plt.show()
 
 
-def add_noise(sigma, f0):
-    n = f0.shape[0]
-    f = f0 + sigma*np.random.standard_normal((n,n))
+def add_noise(sigma, f0, verbose = 0):
+    h = f0.shape[0]
+    w = f0.shape[1]
+    if len(f0.shape) == 2:
+        #Grayscale picture
+        f = f0 + sigma*np.random.standard_normal((h,w))
+    else:
+        d = f0.shape[2]
+        f = np.minimum(1, np.abs(f0 + sigma * np.random.standard_normal((h, w, d))))
+
+        if verbose>2:
+            plt.figure(figsize = (5,5))
+            imageplot(f , "flute", [1, 2, 1])
+            imageplot(f0 , "flute", [1, 2, 2])
+
+        plt.show()
+
     return f
 
 
@@ -42,7 +56,17 @@ def extract_all_patches(w, pict):
 
 
 def patches_to_2D(patches, n, w1):
-    return np.transpose((np.reshape(patches, (n*n,w1*w1), order="F")))
+    if len(patches.shape)==4:
+        #Grayscale image
+        return np.transpose((np.reshape(patches, (n*n,w1*w1), order="F")))
+    else:
+        # Color image
+        one_chanel_patches = []
+        for i in range(3):
+            channel_patch = np.transpose((np.reshape(patches[:, :, i, :, :], (n*n,w1*w1), order="F")))
+            one_chanel_patches.append(channel_patch)
+        patches_2D = np.concatenate(one_chanel_patches)
+        return patches_2D
 
 
 def normalize(K):

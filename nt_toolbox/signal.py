@@ -121,6 +121,7 @@ def load_image(name, n=-1, flatten=1, resc=1, grayscale=1):
             f = transform.resize(f, [n, n], 1)
         elif np.ndim(f)==3:
             f = transform.resize(f, [n, n, f.shape[2]], 1)
+            f = nt.rescale(f)
     return f
 
 def perform_wavortho_transf(f, Jmin, dir, h):
