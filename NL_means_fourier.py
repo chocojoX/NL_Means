@@ -11,12 +11,13 @@ from numpy import linalg
 from NL_tools import *
 from nt_toolbox.general import *
 from nt_toolbox.signal import *
+from patches_shapes import *
 
 
 def preprocess(sigma, color=True):
     path = "nt_toolbox/data/joseph_stylo.jpg"
     # path = "nt_toolbox/data/hibiscus.bmp"
-    n = 200
+    n = 256
     c = [100, 200]
     # f0 = load_image("nt_toolbox/data/lena.bmp")
     # f0 = rescale(f0[c[0]-n//2:c[0]+n//2, c[1]-n//2:c[1]+n//2])
@@ -112,7 +113,7 @@ class NL_Means(object):
 
     def apply_NL_Means_Fourier(self):
         all_distances = np.zeros((self.H.shape[0], self.H.shape[1], 2*self.q + 1, 2*self.q + 1))
-        self.patch, fourier_patch = np.ma.conjugate(self.compute_square_patch())
+        self.patch, fourier_patch = np.ma.conjugate(compute_square_patch(self.n, self.w))
         for dx in np.arange(-self.q, self.q+1):
             for dy in np.arange(-self.q, self.q+1):
                 delta = [dx, dy]
@@ -167,22 +168,10 @@ class NL_Means(object):
         return distance_delta
 
 
-    def compute_square_patch(self):
-        x = np.concatenate( (np.arange(0,self.n/2), np.arange(-self.n/2,0)) );
-        [Y, X] = np.meshgrid(x, x)
-        h = np.maximum(np.abs(X), np.abs(Y))
-        h[h<=self.w] = 1
-        h[h>self.w] = 0
-
-        hF = np.real(np.fft.fft2(h))
-        return h, hF
-
-
 if __name__ == "__main__":
-    nl = NL_Means(tau=0.15, pca_dim=35, w=3, color=True, sigma=0.03, locality_constraint=14)
+    nl = NL_Means(tau=0.15, pca_dim=35, w=4, color=True, sigma=0.03, locality_constraint=6)
     # plot_picture(nl.y)
     t0 = time.time()
-    nl.compute_square_patch()
     nl.create_patches(nl.y)
     nl.compute_PCA_patches()
     nl.apply_NL_Means_Fourier()

@@ -1,0 +1,45 @@
+import numpy as np
+
+
+def compute_square_patch(n, w):
+    x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
+    [Y, X] = np.meshgrid(x, x)
+    h = np.maximum(np.abs(X), np.abs(Y))
+    h[h<=w] = 1
+    h[h>w] = 0
+
+    hF = np.real(np.fft.fft2(h))
+    return h, hF
+
+
+def compute_gaussian_patch(n, w):
+    x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
+    [Y, X] = np.meshgrid(x, x)
+    hh = np.exp(-X**2-Y**2)
+    h = np.maximum(np.abs(X), np.abs(Y))
+    h[h<=w] = 1 * hh[h<=w]
+    h[h>w] = 0
+
+    hF = np.real(np.fft.fft2(h))
+    return h, hF
+
+
+def compute_horizontal_patch(n, w):
+    x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
+    [Y, X] = np.meshgrid(x, x)
+    h = np.maximum(np.abs(1.5*X), np.abs(Y/1.5))
+    h[h<=w] = 1
+    h[h>w] = 0
+
+    hF = np.real(np.fft.fft2(h))
+    return h, hF
+
+def compute_vertical_patch(n, w):
+    x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
+    [Y, X] = np.meshgrid(x, x)
+    h = np.maximum(np.abs(X/2), np.abs(Y*2))
+    h[h<=w] = 1
+    h[h>w] = 0
+
+    hF = np.real(np.fft.fft2(h))
+    return h, hF
