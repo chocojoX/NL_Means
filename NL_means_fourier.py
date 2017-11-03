@@ -7,6 +7,7 @@ import copy
 import time
 import matplotlib.pyplot as plt
 from numpy import linalg
+import SURE_tools
 
 from NL_tools import *
 from nt_toolbox.general import *
@@ -114,6 +115,32 @@ class NL_Means(object):
         return res
 
 
+    def compute_risks_maps(self):
+        self.risk_maps = {}
+        for theta in self.patches.keys():
+            t0 = time.time()
+            risk_map = SURE_tools.risk_map(self.patches[theta], self.all_distances[theta], self.tau, self.y, self.all_pictures[theta], self.kernel, self.q, self.sigma)
+
+            self.risk_maps[theta] = risk_map
+            t1 = time.time()
+            print("risk map computed for theta = %.2f in %.1f seconds" %(theta, t1-t0))
+
+
+    def compute_optimized_picture(self):
+        optimized_picture = np.zeros_like(self.f0)
+        for x in range(self.f0.shape[0]):
+            for y in range(self.f0.shape[0]):
+                theta_opt = 0
+                risk_opt = 1000
+                for theta in self.risk_maps.keys():
+                    risk_xy = self.risk_maps[theta][x, y]
+                    if risk_xy < risk_opt:
+                        risk_opt = risk_xy
+                        theta_opt = theta
+                optimized_picture[x, y] = self.all_pictures[theta][x, y]
+        return optimized_picture
+
+
 
     def apply_NL_Means_Fourier(self):
         self.patches = {}
@@ -139,26 +166,35 @@ class NL_Means(object):
                     inverse_fourier = np.fft.ifftshift(np.real(np.fft.ifft2(fourier_total)))
 
                     self.all_distances[theta][:, :, dx + self.q, dy + self.q] = inverse_fourier
-        all_pictures = {}
+        self.all_pictures = {}
         for i, theta in enumerate(self.patches.keys()):
             self.f_bar = self.apply_NL_Means_Fourier_0(self.all_distances[theta])
-            all_pictures[theta] = self.f_bar
+            self.all_pictures[theta] = self.f_bar
             if i ==0:
                 mean_picture = self.f_bar / float(len(self.patches.keys()))
             else:
                 mean_picture += self.f_bar / float(len(self.patches.keys()))
 
-        n_pict = len(all_pictures.keys())
+
+
+        n_pict = len(self.all_pictures.keys())
         if self.color:
             # plt.figure(figsize = (5,5))
             imageplot(self.y, 'Origin image', [int(n_pict/2+1), 2, 1])
-            for i, theta in enumerate(all_pictures.keys()):
+            for i, theta in enumerate(self.all_pictures.keys()):
                 if i>2:
                     break
-                imageplot(all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(all_pictures[theta], self.f0)), [2, 2, i+2])
+                imageplot(self.all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(self.all_pictures[theta], self.f0)), [2, 2, i+2])
             plt.show()
             imageplot(mean_picture , "corrected mean image,\n SNR = %.1f" %(snr(mean_picture, self.f0)))
             plt.show()
+            
+            # print("Computing risk maps")
+            # self.compute_risks_maps()
+            # self.optimized_picture = self.compute_optimized_picture()
+            # print("risk maps computed")
+            # imageplot(self.optimized_picture , "corrected optimized image,\n SNR = %.1f" %(snr(self.optimized_picture, self.f0)))
+            # plt.show()
 
         else:
             plt.figure(figsize = (5,5))
