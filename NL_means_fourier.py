@@ -112,8 +112,16 @@ class NL_Means(object):
 
 
     def apply_NL_Means_Fourier(self):
-        all_distances = np.zeros((self.H.shape[0], self.H.shape[1], 2*self.q + 1, 2*self.q + 1))
-        self.patch, fourier_patch = np.ma.conjugate(compute_square_patch(self.n, self.w))
+        self.patches = {}
+        self.fourier_patches = {}
+        self.all_distances = {}
+
+        for theta in np.arange(0, 1, 0.15):
+            theta = theta * 3.14159
+            patch, fourier_patch = np.ma.conjugate(compute_rectangular_patch(self.n, self.w, theta))
+            self.patches[theta] = patch
+            self.fourier_patches[theta] = fourier_patch
+            self.all_distances[theta] =  np.zeros((self.H.shape[0], self.H.shape[1], 2*self.q + 1, 2*self.q + 1))
         for dx in np.arange(-self.q, self.q+1):
             for dy in np.arange(-self.q, self.q+1):
                 delta = [dx, dy]
@@ -121,18 +129,25 @@ class NL_Means(object):
                 distance_test = self.compute_distances(delta)
                 distance_test_shifted = np.fft.ifftshift(distance_test)
                 fourier_transform = np.fft.fft2(distance_test_shifted)
-                fourier_total = fourier_patch * fourier_transform
 
-                inverse_fourier = np.fft.ifftshift(np.real(np.fft.ifft2(fourier_total)))
+                for theta in self.patches.keys():
+                    fourier_total = self.fourier_patches[theta] * fourier_transform
+                    inverse_fourier = np.fft.ifftshift(np.real(np.fft.ifft2(fourier_total)))
 
-                all_distances[:, :, dx + self.q, dy + self.q] = inverse_fourier
+                    self.all_distances[theta][:, :, dx + self.q, dy + self.q] = inverse_fourier
+        all_pictures = {}
+        for theta in self.patches.keys():
+            self.f_bar = self.apply_NL_Means_Fourier_0(self.all_distances[theta])
+            all_pictures[theta] = self.f_bar
 
-        self.f_bar = self.apply_NL_Means_Fourier_0(all_distances)
-
+        n_pict = len(all_pictures.keys())
         if self.color:
             plt.figure(figsize = (5,5))
-            imageplot(self.y, 'Origin image', [1, 2, 1])
-            imageplot(self.f_bar , "corrected image", [1, 2, 2])
+            imageplot(self.y, 'Origin image', [int(n_pict/2+1), 2, 1])
+            for i, theta in enumerate(all_pictures.keys()):
+                if i>2:
+                    break
+                imageplot(all_pictures[theta] , "corrected image, theta = %.2f Pi" %(theta/3.14159), [2, 2, i+2])
             plt.show()
         else:
             plt.figure(figsize = (5,5))
@@ -169,7 +184,7 @@ class NL_Means(object):
 
 
 if __name__ == "__main__":
-    nl = NL_Means(tau=0.15, pca_dim=35, w=4, color=True, sigma=0.03, locality_constraint=6)
+    nl = NL_Means(tau=0.12, pca_dim=35, w=5, color=True, sigma=0.03, locality_constraint=6)
     # plot_picture(nl.y)
     t0 = time.time()
     nl.create_patches(nl.y)
