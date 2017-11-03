@@ -24,6 +24,21 @@ def compute_gaussian_patch(n, w):
     return h, hF
 
 
+def compute_rectangular_patch(n, w, theta):
+    x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
+    [Y, X] = np.meshgrid(x, x)
+    c = np.cos(theta)
+    s = np.sin(theta)
+    XX = c*X+s*Y
+    YY = -s*X + c*Y
+    h = np.maximum(np.abs(1.5*XX), np.abs(YY/1.5))
+    h[h<=w] = 1
+    h[h>w] = 0
+
+    hF = np.real(np.fft.fft2(h))
+    return h, hF
+
+
 def compute_horizontal_patch(n, w):
     x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
     [Y, X] = np.meshgrid(x, x)
