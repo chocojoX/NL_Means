@@ -73,9 +73,21 @@ def normalize(K):
     return K/np.sum(K)
 
 
-def exponential_kernel(distance, tau):
-    return normalize(np.exp(-distance/(2*tau**2)))
+def exponential_kernel(distance, tau, normalized=True):
+    if normalized:
+        return normalize(np.exp(-distance/(2*tau**2)))
+    else:
+        return np.exp(-distance/(2*tau**2))
 
 
 def selection(i, q, n):
     return np.array((clamp(np.arange(i[0]-q,i[0] + q + 1), 0, n-1), clamp(np.arange(i[1]-q,i[1] + q + 1), 0, n-1)))
+
+
+def get_coordinates_in_picture(x, y, n1, n2):
+    x = np.abs(x); y = np.abs(y)
+    if x>n1-1:
+        x = x - (x-n1+1)
+    if y>n2-1:
+        y = y - (y-n2+1)
+    return x, y
