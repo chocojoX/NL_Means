@@ -103,7 +103,7 @@ def imageplot(f, str='', sbpt=[]):
     if str != '':
         plt.title(str)
 
-def load_image(name, n=-1, flatten=1, resc=1, grayscale=1):
+def load_image(name, n=-1, flatten=1, resc=1, grayscale=1, square=True):
     """
         Load an image from a file, rescale its dynamic to [0,1], turn it into a grayscale image
         and resize it to size n x n.
@@ -117,11 +117,18 @@ def load_image(name, n=-1, flatten=1, resc=1, grayscale=1):
         f = nt.rescale(f)
     # change the size of the image
     if n > 0:
-        if np.ndim(f)==2:
-            f = transform.resize(f, [n, n], 1)
-        elif np.ndim(f)==3:
-            f = transform.resize(f, [n, n, f.shape[2]], 1)
-            f = nt.rescale(f)
+        if square:
+            if np.ndim(f)==2:
+                f = transform.resize(f, [n, n], 1)
+            elif np.ndim(f)==3:
+                f = transform.resize(f, [n, n, f.shape[2]], 1)
+                f = nt.rescale(f)
+        if not square:
+            if np.ndim(f)==2:
+                f = transform.resize(f, [int((f.shape[0]*n)/f.shape[1]), n], 1)
+            elif np.ndim(f)==3:
+                f = transform.resize(f, [int((f.shape[0]*n)/f.shape[1]), n, f.shape[2]], 1)
+                f = nt.rescale(f)
     return f
 
 def perform_wavortho_transf(f, Jmin, dir, h):

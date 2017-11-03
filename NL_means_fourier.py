@@ -18,13 +18,15 @@ from patches_shapes import *
 def preprocess(sigma, color=True):
     # path = "nt_toolbox/data/joseph_train.jpg"
     # path = "nt_toolbox/data/flowers.png"
-    path = "nt_toolbox/data/EgliseBoisDeboutNorvege2.jpg"
-    n = 256
+    path = "nt_toolbox/data/Marguerite_et_joseph.jpg"
+    # path = "nt_toolbox/data/EgliseBoisDeboutNorvege2.jpg"
+    n = 500
     c = [100, 200]
     # f0 = load_image("nt_toolbox/data/lena.bmp")
     # f0 = rescale(f0[c[0]-n//2:c[0]+n//2, c[1]-n//2:c[1]+n//2])
     if color:
-        f0 = load_image(path, n, grayscale = 0)
+        f0 = load_image(path, n, grayscale = 0, square=False)
+        print(f0.shape)
     else:
         f0 = load_image(path, n, grayscale = 1)
     y = add_noise(sigma, f0)
@@ -39,7 +41,7 @@ class NL_Means(object):
         f0, y = preprocess(self.sigma, color=self.color)
         self.f0 = f0
         self.y = y
-        self.n = f0.shape[0]
+        self.n, self.p = f0.shape[:2]
 
         """ nl-means params"""
         self.w = 3    # Half width of patches
@@ -55,7 +57,7 @@ class NL_Means(object):
             patches = extract_all_patches(self.w, pict)
             self.patches = patches
         else:
-            self.patches = np.zeros((self.n, self.n, 3, self.w1, self.w1))
+            self.patches = np.zeros((self.n, self.p, 3, self.w1, self.w1))
             for col in range(3):
                 self.patches[:, :, col, :, :] = extract_all_patches(self.w, pict[:, :, col])
 
@@ -64,7 +66,7 @@ class NL_Means(object):
         if self.color:
             self.H = self.y
             return
-        flat_patches = patches_to_2D(self.patches, self.n, self.w1)
+        flat_patches = patches_to_2D(self.patches, self.n, self.w1, self.p)
         flat_patches = flat_patches - np.tile(np.mean(flat_patches,0), (flat_patches.shape[0], 1))
 
         C = np.dot(flat_patches, np.transpose(flat_patches))
@@ -74,7 +76,7 @@ class NL_Means(object):
         self.V = V[I,:]             # Ortogonal matrix of diagonalization of C
 
         Q = np.dot(np.transpose(self.V[: ,:self.pca_dim]), flat_patches)
-        self.H = np.reshape(np.transpose(Q),(self.n, self.n, self.pca_dim),order="F")   #Descriptor of patches (n*n*pca_dim)
+        self.H = np.reshape(np.transpose(Q),(self.n, self.p, self.pca_dim),order="F")   #Descriptor of patches (n*n*pca_dim)
 
 
 
@@ -94,7 +96,7 @@ class NL_Means(object):
     def NL_pixelwise_fourier(self, i, all_distances):
         distance = all_distances[i[0], i[1], :, :]
         if self.kernel == "exponential":
-            return self.NLval_0(exponential_kernel(distance, self.tau), selection(i, self.q, self.n))
+            return self.NLval_0(exponential_kernel(distance, self.tau), selection(i, self.q, self.n, self.p))
         else:
             print("%s is not an available kernel" %self.kernel)
 
@@ -147,9 +149,9 @@ class NL_Means(object):
         self.fourier_patches = {}
         self.all_distances = {}
 
-        for theta in np.arange(0, 1, 0.25):
+        for theta in np.arange(0, 1, 0.33):
             theta = theta * 3.14159
-            patch, fourier_patch = np.ma.conjugate(compute_rectangular_patch(self.n, self.w, theta))
+            patch, fourier_patch = np.ma.conjugate(compute_rectangular_patch(self.n, self.w, theta, self.p))
             self.patches[theta] = patch
             self.fourier_patches[theta] = fourier_patch
             self.all_distances[theta] =  np.zeros((self.H.shape[0], self.H.shape[1], 2*self.q + 1, 2*self.q + 1))
@@ -167,9 +169,13 @@ class NL_Means(object):
 
                     self.all_distances[theta][:, :, dx + self.q, dy + self.q] = inverse_fourier
         self.all_pictures = {}
+        imageplot(self.y, 'Origin image')
+        plt.show()
         for i, theta in enumerate(self.patches.keys()):
             self.f_bar = self.apply_NL_Means_Fourier_0(self.all_distances[theta])
             self.all_pictures[theta] = self.f_bar
+            imageplot(self.all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(self.all_pictures[theta], self.f0)))
+            plt.show()
             if i ==0:
                 mean_picture = self.f_bar / float(len(self.patches.keys()))
             else:
@@ -180,15 +186,14 @@ class NL_Means(object):
         n_pict = len(self.all_pictures.keys())
         if self.color:
             # plt.figure(figsize = (5,5))
-            imageplot(self.y, 'Origin image', [int(n_pict/2+1), 2, 1])
             for i, theta in enumerate(self.all_pictures.keys()):
-                if i>2:
+                if i>3:
                     break
-                imageplot(self.all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(self.all_pictures[theta], self.f0)), [2, 2, i+2])
+                imageplot(self.all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(self.all_pictures[theta], self.f0)), [2, 2, i+1])
             plt.show()
             imageplot(mean_picture , "corrected mean image,\n SNR = %.1f" %(snr(mean_picture, self.f0)))
             plt.show()
-            
+
             # print("Computing risk maps")
             # self.compute_risks_maps()
             # self.optimized_picture = self.compute_optimized_picture()
@@ -206,7 +211,7 @@ class NL_Means(object):
 
 
     def apply_NL_Means(self):
-        [Y, X] = np.meshgrid(np.arange(0, self.n), np.arange(0, self.n))
+        [Y, X] = np.meshgrid(np.arange(0, self.p), np.arange(0, self.n))
         self.f_bar = self.apply_NL_Means_0(X, Y)
 
         if self.color:
@@ -231,10 +236,12 @@ class NL_Means(object):
 
 
 if __name__ == "__main__":
-    nl = NL_Means(tau=0.08, pca_dim=35, w=5, color=True, sigma=0.1, locality_constraint=5)
+    color = True
+    nl = NL_Means(tau=0.02, pca_dim=35, w=5, color=color, sigma=0.0, locality_constraint=5)
     # plot_picture(nl.y)
     t0 = time.time()
-    nl.create_patches(nl.y)
+    if not color:
+        nl.create_patches(nl.y)
     nl.compute_PCA_patches()
     nl.apply_NL_Means_Fourier()
     t1 = time.time()

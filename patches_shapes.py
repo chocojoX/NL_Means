@@ -24,9 +24,12 @@ def compute_gaussian_patch(n, w):
     return h, hF
 
 
-def compute_rectangular_patch(n, w, theta):
+def compute_rectangular_patch(n, w, theta, p=None):
+    if p is None:
+        p=n
     x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
-    [Y, X] = np.meshgrid(x, x)
+    y = np.concatenate( (np.arange(0,p/2), np.arange(-p/2,0)) );
+    [Y, X] = np.meshgrid(y, x)
     c = np.cos(theta)
     s = np.sin(theta)
     XX = c*X+s*Y
@@ -39,9 +42,12 @@ def compute_rectangular_patch(n, w, theta):
     return h, hF
 
 
-def compute_horizontal_patch(n, w):
+def compute_horizontal_patch(n, w, p=None):
+    if p is None:
+        p=n
     x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
-    [Y, X] = np.meshgrid(x, x)
+    y = np.concatenate( (np.arange(0,p/2), np.arange(-p/2,0)) );
+    [Y, X] = np.meshgrid(y, x)
     h = np.maximum(np.abs(1.5*X), np.abs(Y/1.5))
     h[h<=w] = 1
     h[h>w] = 0
@@ -49,9 +55,12 @@ def compute_horizontal_patch(n, w):
     hF = np.real(np.fft.fft2(h))
     return h, hF
 
-def compute_vertical_patch(n, w):
+def compute_vertical_patch(n, wp=None):
+    if p is None:
+        p=n
     x = np.concatenate( (np.arange(0,n/2), np.arange(-n/2,0)) );
-    [Y, X] = np.meshgrid(x, x)
+    y = np.concatenate( (np.arange(0,p/2), np.arange(-p/2,0)) );
+    [Y, X] = np.meshgrid(y, x)
     h = np.maximum(np.abs(X/2), np.abs(Y*2))
     h[h<=w] = 1
     h[h>w] = 0
