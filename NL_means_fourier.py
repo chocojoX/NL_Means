@@ -15,8 +15,9 @@ from patches_shapes import *
 
 
 def preprocess(sigma, color=True):
-    path = "nt_toolbox/data/joseph_stylo.jpg"
-    # path = "nt_toolbox/data/hibiscus.bmp"
+    # path = "nt_toolbox/data/joseph_train.jpg"
+    # path = "nt_toolbox/data/flowers.png"
+    path = "nt_toolbox/data/EgliseBoisDeboutNorvege2.jpg"
     n = 256
     c = [100, 200]
     # f0 = load_image("nt_toolbox/data/lena.bmp")
@@ -30,7 +31,7 @@ def preprocess(sigma, color=True):
 
 
 class NL_Means(object):
-    def __init__(self, sigma=0.04, color=True, w=3, kernel = "exponential", pca_dim = 25, locality_constraint = 14, tau = 0.05):
+    def __init__(self, sigma=0.02, color=True, w=3, kernel = "exponential", pca_dim = 25, locality_constraint = 5, tau = 0.05):
         self.sigma = sigma
 
         self.color = color
@@ -59,6 +60,9 @@ class NL_Means(object):
 
 
     def compute_PCA_patches(self):
+        if self.color:
+            self.H = self.y
+            return
         flat_patches = patches_to_2D(self.patches, self.n, self.w1)
         flat_patches = flat_patches - np.tile(np.mean(flat_patches,0), (flat_patches.shape[0], 1))
 
@@ -116,7 +120,7 @@ class NL_Means(object):
         self.fourier_patches = {}
         self.all_distances = {}
 
-        for theta in np.arange(0, 1, 0.15):
+        for theta in np.arange(0, 1, 0.25):
             theta = theta * 3.14159
             patch, fourier_patch = np.ma.conjugate(compute_rectangular_patch(self.n, self.w, theta))
             self.patches[theta] = patch
@@ -136,19 +140,26 @@ class NL_Means(object):
 
                     self.all_distances[theta][:, :, dx + self.q, dy + self.q] = inverse_fourier
         all_pictures = {}
-        for theta in self.patches.keys():
+        for i, theta in enumerate(self.patches.keys()):
             self.f_bar = self.apply_NL_Means_Fourier_0(self.all_distances[theta])
             all_pictures[theta] = self.f_bar
+            if i ==0:
+                mean_picture = self.f_bar / float(len(self.patches.keys()))
+            else:
+                mean_picture += self.f_bar / float(len(self.patches.keys()))
 
         n_pict = len(all_pictures.keys())
         if self.color:
-            plt.figure(figsize = (5,5))
+            # plt.figure(figsize = (5,5))
             imageplot(self.y, 'Origin image', [int(n_pict/2+1), 2, 1])
             for i, theta in enumerate(all_pictures.keys()):
                 if i>2:
                     break
-                imageplot(all_pictures[theta] , "corrected image, theta = %.2f Pi" %(theta/3.14159), [2, 2, i+2])
+                imageplot(all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(all_pictures[theta], self.f0)), [2, 2, i+2])
             plt.show()
+            imageplot(mean_picture , "corrected mean image,\n SNR = %.1f" %(snr(mean_picture, self.f0)))
+            plt.show()
+
         else:
             plt.figure(figsize = (5,5))
             imageplot(self.y, 'y', [1, 2, 1])
@@ -184,7 +195,7 @@ class NL_Means(object):
 
 
 if __name__ == "__main__":
-    nl = NL_Means(tau=0.12, pca_dim=35, w=5, color=True, sigma=0.03, locality_constraint=6)
+    nl = NL_Means(tau=0.08, pca_dim=35, w=5, color=True, sigma=0.1, locality_constraint=5)
     # plot_picture(nl.y)
     t0 = time.time()
     nl.create_patches(nl.y)
