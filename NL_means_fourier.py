@@ -15,13 +15,11 @@ from nt_toolbox.signal import *
 from patches_shapes import *
 
 
-def preprocess(sigma, color=True):
+def preprocess(sigma, color=True, n=256):
     # path = "nt_toolbox/data/joseph_train.jpg"
     # path = "nt_toolbox/data/flowers.png"
     path = "nt_toolbox/data/Marguerite_et_joseph.jpg"
     # path = "nt_toolbox/data/EgliseBoisDeboutNorvege2.jpg"
-    n = 500
-    c = [100, 200]
     # f0 = load_image("nt_toolbox/data/lena.bmp")
     # f0 = rescale(f0[c[0]-n//2:c[0]+n//2, c[1]-n//2:c[1]+n//2])
     if color:
@@ -34,12 +32,13 @@ def preprocess(sigma, color=True):
 
 
 class NL_Means(object):
-    def __init__(self, sigma=0.02, color=True, w=3, kernel = "exponential", pca_dim = 25, locality_constraint = 5, tau = 0.05):
+    def __init__(self, sigma=0.02, color=True, w=3, kernel = "exponential", pca_dim = 25, locality_constraint = 5, tau = 0.05, n=256):
         self.sigma = sigma
 
         self.color = color
-        f0, y = preprocess(self.sigma, color=self.color)
+        f0, y = preprocess(self.sigma, color=self.color, n=n)
         self.f0 = f0
+
         self.y = y
         self.n, self.p = f0.shape[:2]
 
@@ -149,9 +148,10 @@ class NL_Means(object):
         self.fourier_patches = {}
         self.all_distances = {}
 
-        for theta in np.arange(0, 1, 0.33):
+        for theta in np.arange(0, 1, 2):
             theta = theta * 3.14159
-            patch, fourier_patch = np.ma.conjugate(compute_rectangular_patch(self.n, self.w, theta, self.p))
+            # patch, fourier_patch = np.ma.conjugate(compute_rectangular_patch(self.n, self.w, theta, self.p))
+            patch, fourier_patch = np.ma.conjugate(compute_square_patch(self.n, self.w, self.p))
             self.patches[theta] = patch
             self.fourier_patches[theta] = fourier_patch
             self.all_distances[theta] =  np.zeros((self.H.shape[0], self.H.shape[1], 2*self.q + 1, 2*self.q + 1))
@@ -237,7 +237,7 @@ class NL_Means(object):
 
 if __name__ == "__main__":
     color = True
-    nl = NL_Means(tau=0.02, pca_dim=35, w=5, color=color, sigma=0.0, locality_constraint=5)
+    nl = NL_Means(tau=0.012, pca_dim=35, w=5, color=color, sigma=0.0, locality_constraint=8, n=200)
     # plot_picture(nl.y)
     t0 = time.time()
     if not color:
