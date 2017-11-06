@@ -46,7 +46,7 @@ def extract_all_patches(w, pict):
     X[X > n] = 2*n-X[X > n]
     Y[Y > p] = 2*n-Y[Y > p]
 
-    I = (X-1) + (Y-1)*p
+    I = (X-1) + (Y-1)*n
     for i in range(n//w):
         for j in range(p//w):
             I[i,j] = np.transpose(I[i,j])
