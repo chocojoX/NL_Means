@@ -65,6 +65,9 @@ class NL_Means(object):
         if self.color:
             self.H = self.y
             return
+        else:
+            self.H = self.y.reshape(self.y.shape[0], self.y.shape[1], 1)
+            return
         flat_patches = patches_to_2D(self.patches, self.n, self.w1, self.p)
         flat_patches = flat_patches - np.tile(np.mean(flat_patches,0), (flat_patches.shape[0], 1))
 
@@ -236,7 +239,7 @@ class NL_Means(object):
 
 
 if __name__ == "__main__":
-    color = True
+    color = False
     nl = NL_Means(tau=0.012, pca_dim=35, w=5, color=color, sigma=0.0, locality_constraint=8, n=200)
     # plot_picture(nl.y)
     t0 = time.time()
