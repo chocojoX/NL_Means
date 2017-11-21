@@ -17,9 +17,9 @@ from patches_shapes import *
 
 def preprocess(sigma, color=True, n=256):
     # path = "nt_toolbox/data/joseph_train.jpg"
-    # path = "nt_toolbox/data/flowers.png"
-    path = "nt_toolbox/data/Marguerite_et_joseph.jpg"
-    # path = "nt_toolbox/data/EgliseBoisDeboutNorvege2.jpg"
+    path = "nt_toolbox/data/flowers.png"
+    # path = "nt_toolbox/data/Marguerite_et_joseph.jpg"
+    # path = "nt_toolbox/data/santiago-calatrava-architecture-07.jpg"
     # f0 = load_image("nt_toolbox/data/lena.bmp")
     # f0 = rescale(f0[c[0]-n//2:c[0]+n//2, c[1]-n//2:c[1]+n//2])
     if color:
@@ -32,7 +32,8 @@ def preprocess(sigma, color=True, n=256):
 
 
 class NL_Means(object):
-    def __init__(self, sigma=0.02, color=True, w=3, kernel = "exponential", pca_dim = 25, locality_constraint = 5, tau = 0.05, n=256):
+    def __init__(self, sigma=0.015, color=True, w=3, kernel = "exponential", pca_dim = 25, locality_constraint = 5, tau = 0.05, n=256, plotting=True):
+        self.plotting = plotting
         self.sigma = sigma
 
         self.color = color
@@ -146,7 +147,7 @@ class NL_Means(object):
 
 
 
-    def apply_NL_Means_Fourier(self):
+    def apply_NL_Means_Fourier(self, plotting=True):
         self.patches = {}
         self.fourier_patches = {}
         self.all_distances = {}
@@ -172,13 +173,15 @@ class NL_Means(object):
 
                     self.all_distances[theta][:, :, dx + self.q, dy + self.q] = inverse_fourier
         self.all_pictures = {}
-        imageplot(self.y, 'Origin image')
-        plt.show()
+        if self.plotting:
+            imageplot(self.y, 'Origin image')
+            plt.show()
         for i, theta in enumerate(self.patches.keys()):
             self.f_bar = self.apply_NL_Means_Fourier_0(self.all_distances[theta])
             self.all_pictures[theta] = self.f_bar
-            imageplot(self.all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(self.all_pictures[theta], self.f0)))
-            plt.show()
+            if self.plotting:
+                imageplot(self.all_pictures[theta] , "corrected image, theta = %.2f Pi \n SNR = %.1f" %(theta/3.14159, snr(self.all_pictures[theta], self.f0)))
+                plt.show()
             if i ==0:
                 mean_picture = self.f_bar / float(len(self.patches.keys()))
             else:
@@ -187,7 +190,7 @@ class NL_Means(object):
 
 
         n_pict = len(self.all_pictures.keys())
-        if self.color:
+        if self.color and self.plotting:
             # plt.figure(figsize = (5,5))
             for i, theta in enumerate(self.all_pictures.keys()):
                 if i>3:
@@ -205,10 +208,11 @@ class NL_Means(object):
             # plt.show()
 
         else:
-            plt.figure(figsize = (5,5))
-            imageplot(self.y, 'y', [1, 2, 1])
-            imageplot(self.f_bar , "SNR : %.2f" %snr(self.f_bar, self.f0), [1, 2, 2])
-            plt.show()
+            if self.plotting:
+                plt.figure(figsize = (5,5))
+                imageplot(self.y, 'y', [1, 2, 1])
+                imageplot(self.f_bar , "SNR : %.2f" %snr(self.f_bar, self.f0), [1, 2, 2])
+                plt.show()
 
 
 
@@ -239,8 +243,8 @@ class NL_Means(object):
 
 
 if __name__ == "__main__":
-    color = False
-    nl = NL_Means(tau=0.012, pca_dim=35, w=5, color=color, sigma=0.0, locality_constraint=8, n=200)
+    color = True
+    nl = NL_Means(tau=0.075, pca_dim=35, w=8, color=color, sigma=0.07, locality_constraint=8, n=300, plotting=False)
     # plot_picture(nl.y)
     t0 = time.time()
     if not color:
